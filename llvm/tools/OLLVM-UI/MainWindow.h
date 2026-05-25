@@ -1,0 +1,57 @@
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QMainWindow>
+#include <QTextEdit>
+#include <QProgressBar>
+#include <QProcess>
+#include <QTabWidget>
+#include <QKeyEvent>
+#include "MainTab.h"
+
+class MainWindow : public QMainWindow {
+    Q_OBJECT
+
+public:
+    explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
+
+protected:
+    void closeEvent(QCloseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+
+private slots:
+    void onInjectFlags();
+    void onBuild();
+    void onReadProcessOutput();
+    void onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void onCollectOutput();
+    void onShowHelp();
+    void onCleanBuild();
+    void onLogMessage(const QString &text, const QString &color);
+
+private:
+    void setupUI();
+    void appendLog(const QString &text, const QString &color = "#e0e0e0");
+    void saveConfig();
+    void loadConfig();
+    static QString mdToHtml(const QString &md);
+    
+    QTabWidget *m_tabWidget;
+    MainTab *m_mainTab;
+    
+    QTextEdit *m_mkInfoText;
+    QTextEdit *m_outputLog;
+    QProgressBar *m_progressBar;
+    
+    QPushButton *m_btnInject;
+    QPushButton *m_btnBuild;
+    QPushButton *m_btnStopBuild;
+    QPushButton *m_btnCollect;
+    QPushButton *m_btnHelp;
+    QPushButton *m_btnClean;
+    
+    QProcess *m_process;
+};
+
+#endif
