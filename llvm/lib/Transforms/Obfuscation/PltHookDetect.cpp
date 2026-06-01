@@ -442,8 +442,6 @@ Function* PltHookDetect::createStartThreadFunc(Module &M, Function *ThreadCheckF
 }
 
 bool PltHookDetect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] PltHookDetect: Injecting PLT hook detection\n";
     }

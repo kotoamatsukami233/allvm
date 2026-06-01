@@ -62,8 +62,6 @@ public:
    * @return 如果模块被修改返回true，否则返回false
    */
   bool runOnModule(Module &M) override {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
       errs() << "[DEBUG] MicrosoftRTTIEraser: Starting runOnModule\n";
     }

@@ -215,8 +215,6 @@ Function* MemDetect::createMemCheckFunc(Module &M, Function *ReportAndKillFunc) 
 }
 
 bool MemDetect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] MemDetect: Injecting memory detection\n";
     }

@@ -49,13 +49,6 @@ bool RootDetect::runOnModule(Module &M) {
         errs() << "[DEBUG] RootDetect: Entering runOnModule\n";
     }
 
-    if (!isLicenseValidated()) {
-        if (isIRObfuscationDebugEnabled()) {
-            errs() << "[DEBUG] RootDetect: License not validated, exiting\n";
-        }
-        return false;
-    }
-
     Function *MainFunc = M.getFunction("main");
     if (!MainFunc) {
         if (isIRObfuscationDebugEnabled()) {

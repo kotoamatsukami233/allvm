@@ -113,8 +113,6 @@ struct IndirectBranch : public FunctionPass {
 
 
   bool runOnFunction(Function &Fn) override {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
       errs() << "[DEBUG] IndirectBranch: Starting runOnFunction: " << Fn.getName() << "\n";
     }

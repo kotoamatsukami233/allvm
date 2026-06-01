@@ -49,13 +49,6 @@ bool NoRootDetect::runOnModule(Module &M) {
         errs() << "[DEBUG] NoRootDetect: Entering runOnModule\n";
     }
 
-    if (!isLicenseValidated()) {
-        if (isIRObfuscationDebugEnabled()) {
-            errs() << "[DEBUG] NoRootDetect: License not validated, exiting\n";
-        }
-        return false;
-    }
-
     Function *MainFunc = M.getFunction("main");
     if (!MainFunc) {
         if (isIRObfuscationDebugEnabled()) {

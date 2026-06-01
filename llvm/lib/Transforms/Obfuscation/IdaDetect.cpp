@@ -226,8 +226,6 @@ Function* IdaDetect::createIdaCheckFunc(Module &M, Function *ReportAndKillFunc) 
 }
 
 bool IdaDetect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] IdaDetect: Injecting IDA detection\n";
     }

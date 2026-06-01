@@ -168,6 +168,7 @@ void MainTab::setupUI() {
         {"A-Protect 输出", "irobf-aprotect"},
         {"Root 检测", "irobf-root"},
         {"非 Root 检测", "irobf-noroot"},
+        {"禁用内存Dump", "irobf-bandump"},
         {"调试日志", "irobf-debug"},
     };
 

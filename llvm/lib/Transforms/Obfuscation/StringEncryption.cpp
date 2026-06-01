@@ -209,8 +209,6 @@ char StringEncryption::ID = 0;
  * @return 如果模块被修改返回true
  */
 bool StringEncryption::runOnModule(Module &M) {
-	if (!isLicenseValidated()) return false;
-
 	if (isIRObfuscationDebugEnabled()) {
 		errs() << "[DEBUG] StringEncryption: Starting runOnModule\n";
 	}

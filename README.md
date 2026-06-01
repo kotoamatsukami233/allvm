@@ -26,6 +26,7 @@ cd test
 |------|------|
 | `llvm\lib\Transforms\Obfuscation\ObfuscationPassManager.cpp` | Pass 管理器，注册和调度所有混淆 Pass |
 | `llvm\lib\Transforms\Obfuscation\SyscallProtect.cpp` | 系统调用保护，替换 libc 函数为直接 syscall |
+| `llvm\lib\Transforms\Obfuscation\BanDump.cpp` | 禁用内存Dump，移除内存读权限 |
 | `llvm\lib\Transforms\Obfuscation\Flattening.cpp` | 控制流平坦化 |
 | `llvm\lib\Transforms\Obfuscation\IndirectBranch.cpp` | 间接分支混淆 |
 | `llvm\lib\Transforms\Obfuscation\IndirectCall.cpp` | 间接调用混淆 |
@@ -111,6 +112,7 @@ int VMP_PROTECT calculate_result(int a, int b);
 | `-mllvm -irobf-inlinehook` | Inline Hook检测 |
 | `-mllvm -irobf-plthook` | PLT Hook检测 |
 | `-mllvm -irobf-memprotect` | 内存Dump保护 |
+| `-mllvm -irobf-bandump` | 禁用内存Dump (移除读权限) |
 | `-mllvm -irobf-root` | Root检测(有root退出) |
 | `-mllvm -irobf-noroot` | 无Root检测(无root退出) |
 | `-mllvm -irobf-hidemaps` | 隐藏Maps文件(需Root) |
@@ -139,6 +141,8 @@ int VMP_PROTECT calculate_result(int a, int b);
 1. SyscallProtect (系统调用保护)
 2. VMProtect (虚拟机保护)
 3. 检测注入 (反调试等)
+   └─ LdPreloadProtect
+   └─ BanDump
 4. OLLVM混淆 (代码混淆保护)
    └─ ConstantIntEncryption
    └─ IndirectGlobalVariable
@@ -207,6 +211,7 @@ LOCAL_CFLAGS += -mllvm -irobf-syscall
 # LOCAL_CFLAGS += -mllvm -irobf-inlinehook
 # LOCAL_CFLAGS += -mllvm -irobf-plthook
 # LOCAL_CFLAGS += -mllvm -irobf-memprotect
+# LOCAL_CFLAGS += -mllvm -irobf-bandump
 # LOCAL_CFLAGS += -mllvm -irobf-root
 # LOCAL_CFLAGS += -mllvm -irobf-noroot
 # LOCAL_CFLAGS += -mllvm -irobf-hidemaps
@@ -257,6 +262,10 @@ InlineAsm *Asm = InlineAsm::get(AsmTy,
 | **xVMP** | https://github.com/amunmv/xvmp |
 
 ## 更新日志
+
+### v1.2.0 (2026-05-30)
+- **新增 BanDump Pass**: 通过 mprotect 移除内存读权限，防止内存被 dump
+- **移除许可证验证**: 删除所有许可证验证代码，无需卡密即可使用全部功能
 
 ### v1.1.0 (2026-05-25)
 - **新增 HideMaps Pass**: 通过 mount bind 隐藏 `/proc/self/maps` 文件，防止调试工具读取真实内存映射（需要root权限）

@@ -779,8 +779,6 @@ Function* SyscallProtect::createFopenWrapper(Module &M) {
 }
 
 bool SyscallProtect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] SyscallProtect: Starting syscall protection\n";
         errs() << "[DEBUG] SyscallProtect: Target: " << M.getTargetTriple().str() << "\n";

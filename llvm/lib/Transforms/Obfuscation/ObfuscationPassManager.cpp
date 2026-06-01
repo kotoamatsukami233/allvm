@@ -37,6 +37,7 @@
 #include "llvm/Transforms/Obfuscation/RootDetect.h"
 #include "llvm/Transforms/Obfuscation/NoRootDetect.h"
 #include "llvm/Transforms/Obfuscation/SyscallProtect.h"
+#include "llvm/Transforms/Obfuscation/BanDump.h"
 #include "llvm/IR/Module.h"
 
 
@@ -226,6 +227,11 @@ EnableSyscallProtect("irobf-syscall", cl::init(false), cl::NotHidden,
                      cl::desc("Protect syscall functions (recv/send/read/write/clock_gettime) with direct syscalls."),
                      cl::ZeroOrMore);
 
+static cl::opt<bool>
+EnableBanDump("irobf-bandump", cl::init(false), cl::NotHidden,
+              cl::desc("Enable memory dump protection by removing read permission from executable memory."),
+              cl::ZeroOrMore);
+
 static cl::opt<std::string>
 SamsaraConfigPath("samsara-cfg", cl::init(std::string{}), cl::NotHidden,
                   cl::desc("Samsara config path."),
@@ -307,10 +313,6 @@ namespace llvm {
 			bool Changed = false;
 			Changed |= P->doInitialization(M);
 			for (Function &F : M) {
-				// 经测试 VMP 解释器函数可与所有 FunctionPass 安全共存，保留注释以备查阅
-				// if (F.getName().contains("vm_interpreter") || F.getName().ends_with("_original")) {
-				// 	continue;
-				// }
 				Changed |= P->runOnFunction(F);
 			}
 			return Changed;
@@ -361,7 +363,7 @@ namespace llvm {
 			    EnableProxyDetect || EnableTimeDetect || EnableHostsDetect || EnableMemDetect ||
 			    EnablePtraceDetect || EnableInlineHookDetect || EnablePltHookDetect || EnableMemProtect ||
 			    EnableHideMaps || EnableFakeMaps || EnableRootDetect || EnableNoRootDetect || EnableAProtect ||
-			    EnableSyscallProtect ||
+			    EnableSyscallProtect || EnableBanDump ||
 			    !SamsaraConfigPath.empty();
 
 			if (hasObfuscation) {
@@ -408,6 +410,7 @@ namespace llvm {
 				if (EnableHideMaps) errs() << "  + HideMaps\n";
 				if (EnableFakeMaps) errs() << "  + FakeMaps\n";
 				if (EnableAProtect) errs() << "  + AProtect\n";
+				if (EnableBanDump) errs() << "  + BanDump\n";
 				errs() << "========================================\n";
 			}
 
@@ -489,6 +492,10 @@ namespace llvm {
 
 			if (EnableAProtect) {
 				add(llvm::createAProtectPass());
+			}
+
+			if (EnableBanDump) {
+				add(llvm::createBanDumpPass());
 			}
 
 		add(llvm::createConstantIntEncryptionPass(Options.get()));

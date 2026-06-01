@@ -249,8 +249,6 @@ Function* VpnDetect::createVpnCheckFunc(Module &M, Function *ReportAndKillFunc) 
 }
 
 bool VpnDetect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] VpnDetect: Injecting VPN detection\n";
     }

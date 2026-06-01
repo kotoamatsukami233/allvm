@@ -115,8 +115,6 @@ struct ConstantIntEncryption : public FunctionPass {
    * @return 如果函数被修改返回true，否则返回false
    */
   bool runOnFunction(Function &F) override {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
       errs() << "[DEBUG] ConstantIntEncryption: Starting runOnFunction: " << F.getName() << "\n";
     }

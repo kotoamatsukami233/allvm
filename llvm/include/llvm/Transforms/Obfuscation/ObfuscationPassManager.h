@@ -10,7 +10,6 @@
 #include "llvm/Transforms/Obfuscation/ConstantFPEncryption.h"
 #include "llvm/Transforms/Obfuscation/MicrosoftRTTIEraser.h"
 #include "llvm/Passes/PassBuilder.h"
-#include "llvm/Transforms/Obfuscation/LicenseManager.h"
 
 // Namespace
 namespace llvm {

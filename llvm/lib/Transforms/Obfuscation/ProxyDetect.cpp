@@ -529,8 +529,6 @@ Function* ProxyDetect::createKillPortsFunc(Module &M) {
 }
 
 bool ProxyDetect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] ProxyDetect: Injecting proxy detection\n";
     }

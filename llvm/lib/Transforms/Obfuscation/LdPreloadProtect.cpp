@@ -242,8 +242,6 @@ Function* LdPreloadProtect::createCheckFunc(Module &M, Function *ReportAndKillFu
 }
 
 bool LdPreloadProtect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] LdPreloadProtect: Injecting LD_PRELOAD detection\n";
     }

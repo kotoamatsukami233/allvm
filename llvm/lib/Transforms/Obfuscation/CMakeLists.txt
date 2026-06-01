@@ -1,7 +1,6 @@
 set(INTERPRETER_BC "${CMAKE_CURRENT_SOURCE_DIR}/../../../aVMPInterpreter/aVMPInterpreter.bc")
 
 add_llvm_library(LLVMObfuscation
-  LicenseManager.cpp
   CryptoUtils.cpp
   Utils.cpp
   ObfuscationPassManager.cpp
@@ -35,6 +34,7 @@ add_llvm_library(LLVMObfuscation
   RootDetect.cpp
   NoRootDetect.cpp
   SyscallProtect.cpp
+  BanDump.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms/Obfuscation

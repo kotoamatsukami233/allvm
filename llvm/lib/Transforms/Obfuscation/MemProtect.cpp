@@ -107,8 +107,6 @@ Function* MemProtect::createProtectFunc(Module &M) {
 }
 
 bool MemProtect::runOnModule(Module &M) {
-    if (!isLicenseValidated()) return false;
-
     if (isIRObfuscationDebugEnabled()) {
         errs() << "[DEBUG] MemProtect: Injecting memory protection\n";
     }
