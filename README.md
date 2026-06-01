@@ -14,13 +14,13 @@
 
 # ALLVM Obfuscator 21.x
 
-基于 LLVM 21.x 的 OLLVM 混淆器，用于 Android NDK 编译的代码混淆和保护。
+基于 LLVM 21.x 的 ALLVM 混淆器，用于 Android NDK 编译的代码混淆和保护。
 
 > **GitHub**: [https://github.com/abcdefgjh-li/ALLVM](https://github.com/abcdefgjh-li/ALLVM)
 
 ## 快速开始
 
-### 编译 OLLVM
+### 编译 ALLVM
 
 ```bash
 .\build.exe
@@ -157,7 +157,7 @@ int VMP_PROTECT calculate_result(int a, int b);
 3. 检测注入 (反调试等)
    └─ LdPreloadProtect
    └─ BanDump
-4. OLLVM混淆 (代码混淆保护)
+4. ALLVM混淆 (代码混淆保护)
    └─ ConstantIntEncryption
    └─ IndirectGlobalVariable
    └─ ConstantFPEncryption
@@ -179,7 +179,7 @@ LOCAL_SRC_FILES := main.cpp
 
 LOCAL_CFLAGS := -w
 
-# === OLLVM 总开关 ===
+# === ALLVM 总开关 ===
 LOCAL_CFLAGS += -mllvm -irobf
 
 # === 调试输出 ===
@@ -293,10 +293,10 @@ InlineAsm *Asm = InlineAsm::get(AsmTy,
 
 ## License
 
-本项目的 OLLVM 扩展部分（ObTransforms）以 GPL v3 协议发布，详见 [LICENSE](LICENSE)。
+本项目的 ALLVM 扩展部分（ObTransforms）以 GPL v3 协议发布，详见 [LICENSE](LICENSE)。
 
 ```
-OLLVM Obfuscator 21.x - LLVM-based code obfuscation for Android NDK
+ALLVM Obfuscator 21.x - LLVM-based code obfuscation for Android NDK
 Copyright (C) 2024-2026  abcdefgjh
 
 This program is free software: you can redistribute it and/or modify
