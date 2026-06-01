@@ -12,7 +12,7 @@
 
 <br>
 
-# OLLVM Obfuscator 21.x
+# ALLVM Obfuscator 21.x
 
 基于 LLVM 21.x 的 OLLVM 混淆器，用于 Android NDK 编译的代码混淆和保护。
 
