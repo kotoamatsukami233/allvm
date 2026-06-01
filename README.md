@@ -1,3 +1,17 @@
+<div align="center">
+  <img src="qrcode_1780325911909.jpg" alt="逆向大家庭" width="300">
+  <br>
+  <b>逆向大家庭</b>
+  <br><br>
+  <b>作者</b>：abcdefgjh
+  <br>
+  <b>QQ</b>：3986612313
+  <br>
+  <b>TG</b>：<a href="https://t.me/abcdefgjha">@abcdefgjha</a>
+</div>
+
+<br>
+
 # OLLVM Obfuscator 21.x
 
 基于 LLVM 21.x 的 OLLVM 混淆器，用于 Android NDK 编译的代码混淆和保护。
