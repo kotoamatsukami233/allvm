@@ -275,6 +275,8 @@ InlineAsm *Asm = InlineAsm::get(AsmTy,
 |------|------|
 | **xVMP** | https://github.com/amunmv/xvmp |
 
+特别感谢：**殇璃大牛**
+
 ## 更新日志
 
 ### v1.2.0 (2026-05-30)
