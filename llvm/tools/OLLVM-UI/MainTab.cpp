@@ -11,6 +11,9 @@
 #include <QCoreApplication>
 #include <QScrollArea>
 #include <QSet>
+#include <QMessageBox>
+#include <QClipboard>
+#include <QGuiApplication>
 
 MainTab::MainTab(QWidget *parent) : QWidget(parent) {
     setupUI();
@@ -227,10 +230,40 @@ void MainTab::setupUI() {
     }
 
     auto *vmpChk = new QCheckBox("VMP 虚拟机保护", obfGroup);
-    vmpChk->setToolTip("-mllvm -irobf-vmp（需要 __attribute__((annotate(\"vmp\")))）");
+    vmpChk->setToolTip("-mllvm -irobf-vmp（需要 __attribute__((annotate(\"vmp\"))) 或 -irobf-vm_functions=func1;func2）");
     connect(vmpChk, &QCheckBox::toggled, this, [this, vmpChk](bool checked) {
         if (checked) {
+            QString vmpCode = R"(// 方式1: 使用注解 (推荐)
+__attribute__((annotate("vmp")))
+int my_protected_function(int a, int b) {
+    return a + b;
+}
+
+// 方式2: 使用命令行参数
+// -mllvm -irobf-vm_functions=my_protected_function;another_func
+
+// 方式3: 在 Android.mk 中添加
+// LOCAL_CFLAGS += -mllvm -irobf-vmp
+// LOCAL_CFLAGS += -mllvm -irobf-vm_functions=func1;func2;func3
+)";
+            QMessageBox msgBox(this);
+            msgBox.setWindowTitle("VMP 虚拟机保护使用说明");
+            msgBox.setText("VMP 保护需要指定要保护的函数：");
+            msgBox.setInformativeText(vmpCode);
+            msgBox.setStyleSheet("QLabel{min-width: 500px; font-family: Consolas, monospace;}");
+            msgBox.addButton("复制代码", QMessageBox::ActionRole);
+            QPushButton *okBtn = msgBox.addButton("确定", QMessageBox::AcceptRole);
+            msgBox.setDefaultButton(okBtn);
+            msgBox.exec();
+            
+            if (msgBox.clickedButton()->text() == "复制代码") {
+                QClipboard *clipboard = QGuiApplication::clipboard();
+                clipboard->setText(vmpCode);
+                emit logMessage("[VMP] 代码已复制到剪贴板", "#00bfff");
+            }
+            
             emit logMessage("[VMP] 需要在函数前添加注解: __attribute__((annotate(\"vmp\")))", "#00bfff");
+            emit logMessage("[VMP] 或使用命令行: -mllvm -irobf-vm_functions=func1;func2", "#00bfff");
         }
         onOptionChanged();
     });

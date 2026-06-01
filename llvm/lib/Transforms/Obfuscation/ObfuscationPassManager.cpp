@@ -55,8 +55,17 @@ EnableIRObfuscationDebug("irobf-debug", cl::init(false), cl::NotHidden,
                          cl::desc("Enable debug output for obfuscation."),
                          cl::ZeroOrMore);
 
+static cl::opt<std::string>
+VMFunctions("irobf-vm_functions", cl::init(""), cl::NotHidden,
+            cl::desc("Specify VMP protected functions, separated by semicolon (e.g., func1;func2;func3)."),
+            cl::ZeroOrMore);
+
 bool llvm::isIRObfuscationDebugEnabled() {
     return EnableIRObfuscationDebug;
+}
+
+std::string llvm::getVMFunctionsList() {
+    return VMFunctions;
 }
 
 static cl::opt<bool>

@@ -499,7 +499,7 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
 	{PlainPtrTy, DataPtrTy},
 	false);
 	Function *DecFunc =
-	    Function::Create(FuncTy, GlobalValue::PrivateLinkage, "goron_decrypt_string_" + Twine::utohexstr(Entry->ID), M);
+	    Function::Create(FuncTy, GlobalValue::PrivateLinkage, "abcdefgjh_decrypt_string_" + Twine::utohexstr(Entry->ID), M);
 
 	auto ArgIt = DecFunc->arg_begin();
 	Argument *PlainString = ArgIt;

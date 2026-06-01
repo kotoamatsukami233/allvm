@@ -51,6 +51,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #define ENABLE_VMP
@@ -372,7 +373,9 @@ class GOVMTranslator {
             xorshift32_seed = gen_xorshift32_seed();
             xorshift32_state = xorshift32_seed;
 
-            errs() << "[opcode_seed_setup] xorshift32_seed=" << xorshift32_seed << " xorshift32_state=" << xorshift32_state << "\n";
+            if (isIRObfuscationDebugEnabled()) {
+                errs() << "[opcode_seed_setup] xorshift32_seed=" << xorshift32_seed << " xorshift32_state=" << xorshift32_state << "\n";
+            }
 
             std::vector<uint8_t> hex_code;
             ins_to_hex(hex_code, pack(xorshift32_seed, sizeof(uint32_t)));
@@ -413,7 +416,9 @@ class GOVMTranslator {
                     total_retries++;
                 }
             }
-            errs() << "[pack_op] op=" << (int)op << " res=" << (int)res << " xorshift32_state=" << xorshift32_state << "\n";
+            if (isIRObfuscationDebugEnabled()) {
+                errs() << "[pack_op] op=" << (int)op << " res=" << (int)res << " xorshift32_state=" << xorshift32_state << "\n";
+            }
             return pack(res, 1);
         }
 
@@ -689,10 +694,20 @@ void GOVMTranslator::finish_callinst_handler() {
 
 void GOVMTranslator::handle_callinst(CallBase *inst, long long curr_func_id) {
 
-    // errs() << "[handle_callinst] Processing callinst #" << curr_func_id << "\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[handle_callinst] Processing callinst #" << curr_func_id << "\n";
+        Function *callee = inst->getCalledFunction();
+        if (callee) {
+            errs() << "[handle_callinst]   Callee: " << callee->getName() << "\n";
+        } else {
+            errs() << "[handle_callinst]   Indirect call\n";
+        }
+    }
     
     if (!this->callinst_handler_conBBL) {
-        // errs() << "[handle_callinst] ERROR: callinst_handler_conBBL is null!\n";
+        if (isIRObfuscationDebugEnabled()) {
+            errs() << "[handle_callinst] ERROR: callinst_handler_conBBL is null!\n";
+        }
         return;
     }
     
@@ -779,6 +794,14 @@ void GOVMTranslator::handle_callinst(CallBase *inst, long long curr_func_id) {
                 
                 // 跳过以__开头（编译器内部函数）
                 if(calleeName.length() >= 2 && calleeName[0] == '_' && calleeName[1] == '_') {
+                    is_stdlib = true;
+                }
+                // 跳过 SyscallProtect 创建的 wrapper 函数
+                else if(calleeName.find("__syscall_") == 0) {
+                    is_stdlib = true;
+                }
+                // 跳过 SyscallProtect 创建的 __real_ 函数
+                else if(calleeName.find("__real_") == 0) {
                     is_stdlib = true;
                 }
                 // 跳过C标准库函数
@@ -1188,18 +1211,22 @@ void GOVMTranslator::handle_inst(Instruction *ins) {
         int source_bb_offset = basicblock_map[inst->getParent()];
         std::vector<uint8_t> packed_source_bb = pack(source_bb_offset, pointer_size);
 
-        errs() << "[BR] source_bb_offset=" << source_bb_offset 
-               << " for BB " << inst->getParent()->getName().str()
-               << " current code_pos=" << vm_code.size() << "\n";
+        if (isIRObfuscationDebugEnabled()) {
+            errs() << "[BR] source_bb_offset=" << source_bb_offset 
+                   << " for BB " << inst->getParent()->getName().str()
+                   << " current code_pos=" << vm_code.size() << "\n";
+        }
 
         if (inst->isUnconditional()) {
             hex_code.push_back(0);
             hex_code.insert(hex_code.end(), packed_source_bb.begin(), packed_source_bb.end());
             br_map.push_back(pair<int, BasicBlock *>(vm_code.size()+hex_code.size(), inst->getSuccessor(0)));
-            errs() << "[BR] Unconditional to BB " << inst->getSuccessor(0)->getName().str() << "\n";
-            errs() << "[BR] packed_source_bb bytes: ";
-            for (auto b : packed_source_bb) errs() << (int)b << " ";
-            errs() << "\n";
+            if (isIRObfuscationDebugEnabled()) {
+                errs() << "[BR] Unconditional to BB " << inst->getSuccessor(0)->getName().str() << "\n";
+                errs() << "[BR] packed_source_bb bytes: ";
+                for (auto b : packed_source_bb) errs() << (int)b << " ";
+                errs() << "\n";
+            }
             hex_code.insert(hex_code.end(), padding.begin(), padding.end());
         } else {
             hex_code.push_back(1);
@@ -1207,11 +1234,13 @@ void GOVMTranslator::handle_inst(Instruction *ins) {
             std::vector<uint8_t> pack_condition = packValue(inst->getCondition(), &value_map);
             hex_code.insert(hex_code.end(), pack_condition.begin(), pack_condition.end());
 
-            errs() << "[BR] Conditional: true->BB " << inst->getSuccessor(0)->getName().str()
-                   << " false->BB " << inst->getSuccessor(1)->getName().str() << "\n";
-            errs() << "[BR] packed_source_bb bytes: ";
-            for (auto b : packed_source_bb) errs() << (int)b << " ";
-            errs() << "\n";
+            if (isIRObfuscationDebugEnabled()) {
+                errs() << "[BR] Conditional: true->BB " << inst->getSuccessor(0)->getName().str()
+                       << " false->BB " << inst->getSuccessor(1)->getName().str() << "\n";
+                errs() << "[BR] packed_source_bb bytes: ";
+                for (auto b : packed_source_bb) errs() << (int)b << " ";
+                errs() << "\n";
+            }
             br_map.push_back(pair<int, BasicBlock *>(vm_code.size()+hex_code.size(), inst->getSuccessor(0)));
             hex_code.insert(hex_code.end(), padding.begin(), padding.end());
             br_map.push_back(pair<int, BasicBlock *>(vm_code.size()+hex_code.size(), inst->getSuccessor(1)));
@@ -1296,6 +1325,15 @@ void GOVMTranslator::handle_inst(Instruction *ins) {
 
     else if(CallBase * inst = dyn_cast<CallBase>(ins)) {
         
+        if (isIRObfuscationDebugEnabled()) {
+            Function *callee = inst->getCalledFunction();
+            if (callee) {
+                errs() << "[Translator] Handling CallBase to: " << callee->getName() << "\n";
+            } else {
+                errs() << "[Translator] Handling CallBase (indirect call)\n";
+            }
+        }
+        
         // current function id
         long long curr_func_id = this->callinst_handler_curr_idx ++;
         
@@ -1333,7 +1371,9 @@ void GOVMTranslator::handle_inst(Instruction *ins) {
         std::vector<uint8_t> hex_code;
         ins_to_hex(hex_code, pack_op(PHI_OP), packed_res, packed_num);
 
-        errs() << "[PHI] num_incoming=" << num_incoming << " at code_pos=" << vm_code.size() << "\n";
+        if (isIRObfuscationDebugEnabled()) {
+            errs() << "[PHI] num_incoming=" << num_incoming << " at code_pos=" << vm_code.size() << "\n";
+        }
 
         for (unsigned i = 0; i < num_incoming; i++) {
             BasicBlock *incoming_bb = inst->getIncomingBlock(i);
@@ -1341,9 +1381,11 @@ void GOVMTranslator::handle_inst(Instruction *ins) {
             int bb_id = basicblock_map[incoming_bb];
             std::vector<uint8_t> packed_bb_id = pack(bb_id, pointer_size);
             
-            errs() << "[PHI] incoming[" << i << "] bb_id=" << bb_id 
-                   << " incoming_bb=" << incoming_bb->getName().str()
-                   << " basicblock_map lookup result=" << bb_id << "\n";
+            if (isIRObfuscationDebugEnabled()) {
+                errs() << "[PHI] incoming[" << i << "] bb_id=" << bb_id 
+                       << " incoming_bb=" << incoming_bb->getName().str()
+                       << " basicblock_map lookup result=" << bb_id << "\n";
+            }
             
             std::vector<uint8_t> packed_incoming = GET_PACK_VALUE(incoming_val);
             ins_to_hex(hex_code, packed_bb_id, packed_incoming);
@@ -1679,7 +1721,9 @@ void GOVMTranslator::handle_inst(Instruction *ins) {
 
 // Translator
 bool GOVMTranslator::run(){
-    // errs() << "[Translator] Starting for function: " << F->getName() << "\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[Translator] Starting for function: " << F->getName() << "\n";
+    }
     
     bool has_exception_handling = false;
     for(auto &BB : *F) {
@@ -1693,6 +1737,9 @@ bool GOVMTranslator::run(){
     }
     
     if(has_exception_handling) {
+        if (isIRObfuscationDebugEnabled()) {
+            errs() << "[Translator] Function has exception handling\n";
+        }
     }
     
     curr_data_offset = 0;
@@ -1929,20 +1976,28 @@ class GOVMModifier {
 
 void GOVMModifier::run() {
 
-    errs() << "[GOVMModifier] Starting run() for function: " << F->getName() << "\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier] Starting run() for function: " << F->getName() << "\n";
+    }
 
     std::string orig_name = F->getName().str();
     
-    errs() << "[GOVMModifier]   Deleting function body...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Deleting function body...\n";
+    }
     F->deleteBody();
     
-    errs() << "[GOVMModifier]   Creating new basic block...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Creating new basic block...\n";
+    }
     BasicBlock* body_bbl = BasicBlock::Create(this->Mod->getContext(), "entry", F);
     IRBuilder<> irbuilder(body_bbl);
 
     assert(!F->isVarArg());
 
-    errs() << "[GOVMModifier]   Processing arguments...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Processing arguments...\n";
+    }
     std::vector<pair<Value*, int>> args_map;
     int arg_offset = 0;
     if (!F->getReturnType()->isVoidTy()) {
@@ -1962,7 +2017,9 @@ void GOVMModifier::run() {
         arg_offset += modDataLayout->getTypeAllocSize(tmparg->getType());
     }
 
-    errs() << "[GOVMModifier]   Storing global variable addresses (gv_value_map size=" << gv_value_map->size() << ")...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Storing global variable addresses (gv_value_map size=" << gv_value_map->size() << ")...\n";
+    }
     for (auto p: *gv_value_map) {
         GlobalVariable *gv = p.first;
         int offset = p.second;
@@ -1978,7 +2035,9 @@ void GOVMModifier::run() {
         irbuilder.CreateStore(gv_addr_int, ptr);
     }
 
-    errs() << "[GOVMModifier]   Processing argument mappings...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Processing argument mappings...\n";
+    }
     int temp_arg_idx = 0;
     for (auto arg = F->arg_begin(); arg != F->arg_end(); arg++, temp_arg_idx++) {
         Value *tmparg = &*arg;
@@ -2003,17 +2062,23 @@ void GOVMModifier::run() {
         irbuilder.CreateStore(currvalue, ptr);
     }
 
-    errs() << "[GOVMModifier]   Setting data_seg_addr and code_seg_addr...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Setting data_seg_addr and code_seg_addr...\n";
+    }
     
     Value * data_seg_ptr2int = irbuilder.CreatePtrToInt(gv_data_seg, Type::getInt64Ty(Mod->getContext()));
     irbuilder.CreateStore(data_seg_ptr2int, data_seg_addr);
     Value * code_seg_ptr2int = irbuilder.CreatePtrToInt(gv_code_seg, Type::getInt64Ty(Mod->getContext()));
     irbuilder.CreateStore(code_seg_ptr2int, code_seg_addr);
 
-    errs() << "[GOVMModifier]   Creating call to vm_interpreter...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Creating call to vm_interpreter...\n";
+    }
     irbuilder.CreateCall(govm_interpreter);
 
-    errs() << "[GOVMModifier]   Creating return...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMModifier]   Creating return...\n";
+    }
 
     if (!F->getReturnType()->isVoidTy()) {
         ConstantInt *Zero = ConstantInt::get(Type::getInt64Ty(F->getContext()), 0);
@@ -2326,36 +2391,47 @@ static Function* createVmpDebugId(Module *M, bool debug_enabled) {
 
 void GOVMInterpreter::run() {
 
-    errs() << "[GOVMInterpreter] Starting run() for function: " << F->getName() << "\n";
-
-    errs() << "[GOVMInterpreter] Step 1: Parsing bitcode...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Starting run() for function: " << F->getName() << "\n";
+        errs() << "[GOVMInterpreter] Step 1: Parsing bitcode...\n";
+    }
     Module *interpreter_module = llvm_parse_bitcode_from_string();
     if (!interpreter_module) {
-        errs() << "[GOVMInterpreter] ERROR: Failed to parse bitcode\n";
+        if (isIRObfuscationDebugEnabled()) {
+            errs() << "[GOVMInterpreter] ERROR: Failed to parse bitcode\n";
+        }
         return;
     }
-    errs() << "[GOVMInterpreter] Step 1: Bitcode parsed successfully\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 1: Bitcode parsed successfully\n";
+    }
 
-    // Create debug function in target module (like IdaDetect does)
-    // Controlled by -irobf-debug flag
-    errs() << "[GOVMInterpreter] Step 2: Creating debug function...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 2: Creating debug function...\n";
+    }
     Function *DebugIdFunc = createVmpDebugId(Mod, isIRObfuscationDebugEnabled());
-    errs() << "[GOVMInterpreter] Step 2: Debug function created\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 2: Debug function created\n";
+    }
 
-    // Replace debug function declaration in interpreter module
-    errs() << "[GOVMInterpreter] Step 3: Replacing debug function...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 3: Replacing debug function...\n";
+    }
     if (Function *OldDebugId = interpreter_module->getFunction("vmp_debug_id")) {
         OldDebugId->replaceAllUsesWith(DebugIdFunc);
     }
-    errs() << "[GOVMInterpreter] Step 3: Debug function replaced\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 3: Debug function replaced\n";
+    }
 
-    // replace GlobalVariable 
-    errs() << "[GOVMInterpreter] Step 4: Replacing global variables...\n";
-    errs() << "[GOVMInterpreter]   gv_data_seg = " << (void*)gv_data_seg << "\n";
-    errs() << "[GOVMInterpreter]   gv_code_seg = " << (void*)gv_code_seg << "\n";
-    errs() << "[GOVMInterpreter]   ip = " << (void*)ip << "\n";
-    errs() << "[GOVMInterpreter]   data_seg_addr = " << (void*)data_seg_addr << "\n";
-    errs() << "[GOVMInterpreter]   code_seg_addr = " << (void*)code_seg_addr << "\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 4: Replacing global variables...\n";
+        errs() << "[GOVMInterpreter]   gv_data_seg = " << (void*)gv_data_seg << "\n";
+        errs() << "[GOVMInterpreter]   gv_code_seg = " << (void*)gv_code_seg << "\n";
+        errs() << "[GOVMInterpreter]   ip = " << (void*)ip << "\n";
+        errs() << "[GOVMInterpreter]   data_seg_addr = " << (void*)data_seg_addr << "\n";
+        errs() << "[GOVMInterpreter]   code_seg_addr = " << (void*)code_seg_addr << "\n";
+    }
     
     std::vector<std::string> gv_list = {"gv_data_seg", "gv_code_seg", "ip", "data_seg_addr", "code_seg_addr", "pointer_size", "opcode_xorshift32_state", "vm_code_state", "exception_thrown", "exception_ptr", "exception_selector", "last_br_from_bb_id", "current_bb_id"};
     std::vector<GlobalVariable *> new_gv_list = {gv_data_seg, gv_code_seg, ip, data_seg_addr, code_seg_addr, pointer_size_gv, opcode_xorshift32_state, vm_code_state, exc_thrown_gv, exc_ptr_gv, exc_sel_gv, last_bb_gv, curr_bb_gv};
@@ -2364,36 +2440,45 @@ void GOVMInterpreter::run() {
     for (unsigned i = 0; i < gv_list.size(); i++) {
         GlobalVariable *old_gv = interpreter_module->getGlobalVariable(gv_list[i]);
         if (!old_gv) {
-            errs() << "[GOVMInterpreter]   WARNING: old_gv '" << gv_list[i] << "' not found in interpreter module\n";
+            if (isIRObfuscationDebugEnabled()) {
+                errs() << "[GOVMInterpreter]   WARNING: old_gv '" << gv_list[i] << "' not found in interpreter module\n";
+            }
             continue;
         }
         GlobalVariable *new_gv = new_gv_list[i];
         if (!new_gv) {
-            errs() << "[GOVMInterpreter]   WARNING: new_gv '" << gv_list[i] << "' is null\n";
+            if (isIRObfuscationDebugEnabled()) {
+                errs() << "[GOVMInterpreter]   WARNING: new_gv '" << gv_list[i] << "' is null\n";
+            }
             continue;
         }
         
-        errs() << "[GOVMInterpreter]   Replacing " << gv_list[i] << ": old type=" << *old_gv->getValueType() << ", new type=" << *new_gv->getValueType() << "\n";
+        if (isIRObfuscationDebugEnabled()) {
+            errs() << "[GOVMInterpreter]   Replacing " << gv_list[i] << ": old type=" << *old_gv->getValueType() << ", new type=" << *new_gv->getValueType() << "\n";
+        }
         gv_remap[old_gv] = new_gv;
     }
-    errs() << "[GOVMInterpreter] Step 4: Global variables mapped, gv_remap size=" << gv_remap.size() << "\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 4: Global variables mapped, gv_remap size=" << gv_remap.size() << "\n";
+    }
 
-    // replace call_handler
-    errs() << "[GOVMInterpreter] Step 5: Replacing call_handler...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 5: Replacing call_handler...\n";
+    }
     Function *old_func = interpreter_module->getFunction("call_handler");
     if (old_func && callinst_handler) {
         old_func->replaceAllUsesWith(callinst_handler);
     }
-    errs() << "[GOVMInterpreter] Step 5: call_handler replaced\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 5: call_handler replaced\n";
+    }
 
-    // clone functions
-    // First, collect all function declarations from interpreter module
-    // and add them to target module (including intrinsics)
-    errs() << "[GOVMInterpreter] Step 6: Collecting function declarations...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 6: Collecting function declarations...\n";
+    }
     for(auto Func = interpreter_module->begin(); Func != interpreter_module->end(); ++Func) {
         Function *fun = &*Func;
         if(fun->isDeclaration()) {
-            // Check if function already exists in target module
             if(!Mod->getFunction(fun->getName())) {
                 FunctionCallee FC = Mod->getOrInsertFunction(fun->getName().str(), fun->getFunctionType());
                 Function *NewF = cast<Function>(FC.getCallee());
@@ -2401,9 +2486,13 @@ void GOVMInterpreter::run() {
             }
         }
     }
-    errs() << "[GOVMInterpreter] Step 6: Function declarations collected\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 6: Function declarations collected\n";
+    }
     
-    errs() << "[GOVMInterpreter] Step 7: Cloning interpreter functions...\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 7: Cloning interpreter functions...\n";
+    }
     int func_idx = 0;
     for(auto Func = interpreter_module->begin();Func!=interpreter_module->end();++Func)
         {
@@ -2411,7 +2500,9 @@ void GOVMInterpreter::run() {
             Function *fun = &*Func;
 
             if(is_interpreter_function(fun)) {
-                errs() << "[GOVMInterpreter]   Cloning function: " << fun->getName() << " (idx=" << func_idx++ << ")\n";
+                if (isIRObfuscationDebugEnabled()) {
+                    errs() << "[GOVMInterpreter]   Cloning function: " << fun->getName() << " (idx=" << func_idx++ << ")\n";
+                }
                 FunctionCallee FC = Mod->getOrInsertFunction(fun->getName().str(), fun->getFunctionType());
                 Function *NewF = cast<Function>(FC.getCallee());
                 NewF->setLinkage(llvm::GlobalValue::LinkageTypes::InternalLinkage);
@@ -2428,7 +2519,9 @@ void GOVMInterpreter::run() {
                     VMap[gv_pair.first] = gv_pair.second;
                 }
 
-                errs() << "[GOVMInterpreter]     Processing instructions...\n";
+                if (isIRObfuscationDebugEnabled()) {
+                    errs() << "[GOVMInterpreter]     Processing instructions...\n";
+                }
                 for (Instruction &I : instructions(fun)) {
                     if (CallBase *CB = dyn_cast<CallBase>(&I)) {
                         Function *Callee = CB->getCalledFunction();
@@ -2446,7 +2539,9 @@ void GOVMInterpreter::run() {
                     }
                 }
 
-                errs() << "[GOVMInterpreter]     Setting up arguments...\n";
+                if (isIRObfuscationDebugEnabled()) {
+                    errs() << "[GOVMInterpreter]     Setting up arguments...\n";
+                }
                 Function::arg_iterator DestI = NewF->arg_begin();
 
                 for (const Argument & I : fun->args())
@@ -2455,9 +2550,13 @@ void GOVMInterpreter::run() {
                         VMap[&I] = &*DestI++;
                     }
 
-                errs() << "[GOVMInterpreter]     Calling CloneFunctionInto...\n";
+                if (isIRObfuscationDebugEnabled()) {
+                    errs() << "[GOVMInterpreter]     Calling CloneFunctionInto...\n";
+                }
                 CloneFunctionInto(NewF, fun, VMap, CloneFunctionChangeType::DifferentModule, returns);
-                errs() << "[GOVMInterpreter]     CloneFunctionInto completed\n";
+                if (isIRObfuscationDebugEnabled()) {
+                    errs() << "[GOVMInterpreter]     CloneFunctionInto completed\n";
+                }
 
                 NewF->setName(fun->getName()+"_"+F->getName());
 
@@ -2498,7 +2597,9 @@ void GOVMInterpreter::run() {
             break;
     }
 
-    errs() << "[GOVMInterpreter] Step 7: All interpreter functions cloned\n";
+    if (isIRObfuscationDebugEnabled()) {
+        errs() << "[GOVMInterpreter] Step 7: All interpreter functions cloned\n";
+    }
 }
 namespace {
 
@@ -2595,22 +2696,30 @@ namespace {
         std::string attr = attribute;
         std::string attrNo = "no" + attr;
         
-        // 读取注解
         std::string annotation = readAnnotate(f);
         
-        // 检查是否有novmp注解
         if (annotation.find(attrNo) != std::string::npos) {
             return false;
         }
 
-        // 检查是否有vmp注解
         if (annotation.find(attr) != std::string::npos) {
             used_passes.insert(attribute);
             return true;
         }
         
-        // VMP只处理有明确vmp注解的函数，不处理没有注解的函数
-        // 这与FLA等其他混淆不同，因为VMP会显著改变函数结构
+        std::string vmFunctionsList = getVMFunctionsList();
+        if (!vmFunctionsList.empty()) {
+            std::string funcName = f->getName().str();
+            std::istringstream ss(vmFunctionsList);
+            std::string token;
+            while (std::getline(ss, token, ';')) {
+                if (!token.empty() && funcName == token) {
+                    used_passes.insert(attribute);
+                    return true;
+                }
+            }
+        }
+        
         return false;
     }
 
@@ -2641,9 +2750,8 @@ struct VMProtect : public ModulePass {
           if(F->isVarArg()) {
             continue;
           }
-          // VMP 函数使用 O0 优化，添加 OptimizeNone 防止优化
-          // 添加 AlwaysInline 强制内联
-          F->addFnAttr(Attribute::AlwaysInline);
+          // VMP 函数使用 OptimizeNone 防止优化
+          // 注意: 不要添加 AlwaysInline，因为 OptimizeNone 隐含 NoInline，两者冲突
           F->addFnAttr(Attribute::OptimizeNone);
           // 跳过标准库函数（只跳过明确的标准库函数，不跳过用户函数）
           // 带vmp注解的函数不进行标准库名称过滤
@@ -2654,6 +2762,14 @@ struct VMProtect : public ModulePass {
           if(F->isDeclaration()) {
             // 跳过以__开头（编译器内部函数）
             if(funcName.length() >= 2 && funcName[0] == '_' && funcName[1] == '_') {
+              is_stdlib = true;
+            }
+            // 跳过 SyscallProtect 创建的 wrapper 函数
+            else if(funcName.find("__syscall_") == 0) {
+              is_stdlib = true;
+            }
+            // 跳过 SyscallProtect 创建的 __real_ 函数
+            else if(funcName.find("__real_") == 0) {
               is_stdlib = true;
             }
             // 跳过C标准库函数
@@ -2820,15 +2936,28 @@ PreservedAnalyses llvm::VMProtectPass::run(Module &M, ModuleAnalysisManager &AM)
       if(F->isVarArg()) {
         continue;
       }
-      // 为 VMP 函数添加 inline 属性，允许内联展开
-      F->addFnAttr(Attribute::AlwaysInline);
+      // VMP 函数使用 OptimizeNone 防止优化
+      // 注意: 不要添加 AlwaysInline，因为 OptimizeNone 隐含 NoInline，两者冲突
+      F->addFnAttr(Attribute::OptimizeNone);
       std::string funcName = F->getName().str();
       
       bool is_stdlib = false;
       
       // 只对声明函数（外部函数）进行标准库过滤
       if(F->isDeclaration()) {
-        if(funcName.find("printf") != std::string::npos ||
+        // 跳过以__开头的编译器内部函数
+        if(funcName.length() >= 2 && funcName[0] == '_' && funcName[1] == '_') {
+          is_stdlib = true;
+        }
+        // 跳过 SyscallProtect 创建的 wrapper 函数
+        else if(funcName.find("__syscall_") == 0) {
+          is_stdlib = true;
+        }
+        // 跳过 SyscallProtect 创建的 __real_ 函数
+        else if(funcName.find("__real_") == 0) {
+          is_stdlib = true;
+        }
+        else if(funcName.find("printf") != std::string::npos ||
            funcName.find("sprintf") != std::string::npos ||
            funcName.find("fprintf") != std::string::npos ||
            funcName.find("malloc") != std::string::npos ||

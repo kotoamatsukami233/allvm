@@ -20,7 +20,6 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
@@ -78,7 +77,6 @@ Function* BanDump::createBanDumpFunc(Module &M) {
     BasicBlock *OpenFailBB = BasicBlock::Create(Ctx, "open_fail", Func);
     BasicBlock *LoopBB = BasicBlock::Create(Ctx, "loop", Func);
     BasicBlock *ReadOkBB = BasicBlock::Create(Ctx, "read_ok", Func);
-    BasicBlock *CheckLineBB = BasicBlock::Create(Ctx, "check_line", Func);
     BasicBlock *FoundRxBB = BasicBlock::Create(Ctx, "found_rx", Func);
     BasicBlock *ParseHeadBB = BasicBlock::Create(Ctx, "parse_head", Func);
     BasicBlock *ParseTailBB = BasicBlock::Create(Ctx, "parse_tail", Func);
@@ -186,19 +184,13 @@ Function* BanDump::createBanDumpFunc(Module &M) {
     
     Builder.SetInsertPoint(CallMprotectBB);
     
-    FunctionType *AsmFuncTy = FunctionType::get(VoidTy, {Int64Ty, Int64Ty, Int32Ty}, false);
-    InlineAsm *MprotectAsm = InlineAsm::get(
-        AsmFuncTy,
-        "mov x0, $0\n"
-        "mov x1, $1\n"
-        "mov x2, $2\n"
-        "mov x8, #226\n"
-        "svc #0",
-        "r,r,r", true, false
+    FunctionCallee MprotectFunc = M.getOrInsertFunction(
+        "mprotect",
+        FunctionType::get(Int32Ty, {Int64Ty, Int64Ty, Int32Ty}, false)
     );
     
     Value *ProtExec = ConstantInt::get(Int32Ty, 4);
-    Builder.CreateCall(MprotectAsm, {HeadAddr, Size, ProtExec});
+    Builder.CreateCall(MprotectFunc, {HeadAddr, Size, ProtExec});
     
     Builder.CreateBr(NextLineBB);
     
@@ -240,22 +232,6 @@ bool BanDump::runOnModule(Module &M) {
     Function *BanDumpFunc = createBanDumpFunc(M);
 
     IRBuilder<> Builder(&EntryBB, EntryBB.getFirstInsertionPt());
-    
-    LLVMContext &Ctx = M.getContext();
-    
-    if (isIRObfuscationDebugEnabled()) {
-        FunctionCallee PrintfFunc = M.getOrInsertFunction(
-            "printf",
-            FunctionType::get(Type::getInt32Ty(Ctx), {PointerType::get(Ctx, 0)}, true)
-        );
-        Constant *DebugStr = ConstantDataArray::getString(Ctx, "[DEBUG] BanDump: Applying dump protection...\n");
-        GlobalVariable *DebugGV = new GlobalVariable(
-            M, DebugStr->getType(), true,
-            GlobalValue::PrivateLinkage, DebugStr,
-            ".bandump.debug"
-        );
-        Builder.CreateCall(PrintfFunc, {ConstantExpr::getBitCast(DebugGV, PointerType::get(Ctx, 0))});
-    }
     
     Builder.CreateCall(BanDumpFunc);
 

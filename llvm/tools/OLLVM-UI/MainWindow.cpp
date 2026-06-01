@@ -212,9 +212,6 @@ void MainWindow::onInjectFlags() {
             break;
         }
     }
-    if (hasVmp) {
-        flags << "-frtti" << "-fno-exceptions";
-    }
 
     if (flags.isEmpty()) {
         QMessageBox::warning(this, "错误", "请至少选择一个混淆功能！");

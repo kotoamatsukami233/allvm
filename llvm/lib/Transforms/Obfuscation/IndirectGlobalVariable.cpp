@@ -83,7 +83,7 @@ struct IndirectGlobalVariable : public FunctionPass {
 
             StringRef GVName = GV->getName();
             if (GVName.contains("dec_status_") || 
-                GVName.contains("goron_decrypt_string_") ||
+                GVName.contains("abcdefgjh_decrypt_string_") ||
                 GVName.starts_with("dec") ||
                 GVName.contains("EncryptedStringTable") ||
                 GVName.contains("__global_variable_initializer_")) {

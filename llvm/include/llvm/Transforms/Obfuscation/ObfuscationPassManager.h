@@ -18,6 +18,8 @@ class PassRegistry;
 
 bool isIRObfuscationDebugEnabled();
 
+extern std::string getVMFunctionsList();
+
 ModulePass *createObfuscationPassManager();
 void initializeObfuscationPassManagerPass(PassRegistry &Registry);
 
