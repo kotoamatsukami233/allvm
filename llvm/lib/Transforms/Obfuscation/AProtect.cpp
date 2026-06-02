@@ -63,7 +63,7 @@ bool AProtect::runOnModule(Module &M) {
 
     Type *Int32Ty = Type::getInt32Ty(Ctx);
     Type *Int64Ty = Type::getInt64Ty(Ctx);
-    Type *CharPtrTy = PointerType::get(Type::getInt8Ty(Ctx), 0);
+    Type *CharPtrTy = PointerType::get(Ctx, 0);
 
     FunctionCallee TimeFunc = M.getOrInsertFunction(
         "time", FunctionType::get(Int64Ty, {Int64Ty}, false));
@@ -111,7 +111,7 @@ bool AProtect::runOnModule(Module &M) {
     CallInst *RandCall = Builder.CreateCall(RandFunc, {});
     Value *ColorIndex = Builder.CreateSRem(RandCall, ConstantInt::get(Int32Ty, NumColors));
 
-    Value *ColorsPtr = Builder.CreateBitCast(ColorsArray, PointerType::get(ColorsArrayTy, 0));
+    Value *ColorsPtr = Builder.CreateBitCast(ColorsArray, PointerType::get(Ctx, 0));
     Value *ColorElemPtr = Builder.CreateInBoundsGEP(ColorsArrayTy, ColorsPtr,
         {ConstantInt::get(Int64Ty, 0), ColorIndex});
     Value *ColorStrPtr = Builder.CreateLoad(CharPtrTy, ColorElemPtr);

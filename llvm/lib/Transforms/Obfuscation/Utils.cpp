@@ -110,10 +110,10 @@ CallBase* fixEH(CallBase* CB) {
   if (!EHBlock || !EHBlock->isEHPad()) {
     return CB;
   }
-  const auto EHPad = EHBlock->getFirstNonPHI();
+  const auto EHPad = &*EHBlock->getFirstNonPHIIt();
 
   const OperandBundleDef OB("funclet", EHPad);
-  auto *NewCall = CallBase::addOperandBundle(CB, LLVMContext::OB_funclet, OB, CB);
+  auto *NewCall = CallBase::addOperandBundle(CB, LLVMContext::OB_funclet, OB, CB->getIterator());
   NewCall->copyMetadata(*CB);
   CB->replaceAllUsesWith(NewCall);
   CB->eraseFromParent();
@@ -156,7 +156,7 @@ void LowerConstantExpr(Function &F) {
         if (ConstantExpr *CE = dyn_cast<
           ConstantExpr>(PHI->getIncomingValue(i))) {
           Instruction *NewInst = CE->getAsInstruction();
-          NewInst->insertBefore(TI);
+          NewInst->insertBefore(TI->getIterator());
           PHI->setIncomingValue(i, NewInst);
           WorkList.insert(NewInst);
         }
@@ -165,7 +165,7 @@ void LowerConstantExpr(Function &F) {
       for (unsigned int i = 0; i < I->getNumOperands(); ++i) {
         if (ConstantExpr *CE = dyn_cast<ConstantExpr>(I->getOperand(i))) {
           Instruction *NewInst = CE->getAsInstruction();
-          NewInst->insertBefore(I);
+          NewInst->insertBefore(I->getIterator());
           I->replaceUsesOfWith(CE, NewInst);
           WorkList.insert(NewInst);
         }

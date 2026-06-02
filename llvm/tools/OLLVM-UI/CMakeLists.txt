@@ -24,6 +24,10 @@ add_executable(ollvm-ui WIN32
   ConfigManager.h
   MainTab.cpp
   MainTab.h
+  CodeEditor.cpp
+  CodeEditor.h
+  HelpDocument.cpp
+  HelpDocument.h
   resources.qrc
 )
 

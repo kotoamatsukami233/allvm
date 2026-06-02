@@ -81,8 +81,8 @@ Function* HideMaps::createGenerateFakeMapsFunc(Module &M) {
         FunctionType::get(CharPtrTy, {CharPtrTy, CharPtrTy}, false)
     );
     
-    Value *TmpPath = Builder.CreateGlobalStringPtr("/data/local/tmp/.fake_maps", "tmp_path");
-    Value *Mode = Builder.CreateGlobalStringPtr("w", "mode");
+    Value *TmpPath = Builder.CreateGlobalString("/data/local/tmp/.fake_maps", "tmp_path");
+    Value *Mode = Builder.CreateGlobalString("w", "mode");
     
     CallInst *Fp = Builder.CreateCall(FopenFunc, {TmpPath, Mode});
     
@@ -97,7 +97,7 @@ Function* HideMaps::createGenerateFakeMapsFunc(Module &M) {
         FunctionType::get(Type::getInt32Ty(Ctx), {CharPtrTy, CharPtrTy}, true)
     );
     
-    Value *Fmt1 = Builder.CreateGlobalStringPtr("%08lx-%08lx %c%c%c%c %08lx %02x:%02x %lu %s\n", "fmt1");
+    Value *Fmt1 = Builder.CreateGlobalString("%08lx-%08lx %c%c%c%c %08lx %02x:%02x %lu %s\n", "fmt1");
     Value *Zero = ConstantInt::get(Type::getInt64Ty(Ctx), 0);
     Value *One = ConstantInt::get(Type::getInt64Ty(Ctx), 0x1000);
     Value *Two = ConstantInt::get(Type::getInt64Ty(Ctx), 0x2000);
@@ -106,7 +106,7 @@ Function* HideMaps::createGenerateFakeMapsFunc(Module &M) {
     Value *X = ConstantInt::get(Type::getInt32Ty(Ctx), 'x');
     Value *W = ConstantInt::get(Type::getInt32Ty(Ctx), 'w');
     Value *Dash = ConstantInt::get(Type::getInt32Ty(Ctx), '-');
-    Value *Fake = Builder.CreateGlobalStringPtr("[fake]", "fake");
+    Value *Fake = Builder.CreateGlobalString("[fake]", "fake");
     
     Builder.CreateCall(FprintfFunc, {Fp, Fmt1, Zero, One, R, Dash, Dash, Dash, Zero, Zero, Zero, Zero, Fake});
     Builder.CreateCall(FprintfFunc, {Fp, Fmt1, One, Two, R, X, Dash, Dash, Zero, Zero, Zero, Zero, Fake});
@@ -153,7 +153,7 @@ Function* HideMaps::createHideOneFunc(Module &M) {
         FunctionType::get(Int32Ty, {CharPtrTy}, false)
     );
     
-    Value *CmdFormat = Builder.CreateGlobalStringPtr("mount -o bind /data/local/tmp/.fake_maps %s 2>/dev/null", "cmd_fmt");
+    Value *CmdFormat = Builder.CreateGlobalString("mount -o bind /data/local/tmp/.fake_maps %s 2>/dev/null", "cmd_fmt");
     
     Value *CmdBuf = Builder.CreateAlloca(CharPtrTy, ConstantInt::get(Type::getInt64Ty(Ctx), 256));
     
@@ -219,8 +219,8 @@ Function* HideMaps::createHideAllMapsFunc(Module &M) {
     Value *PathBuf = Builder.CreateAlloca(CharPtrTy, ConstantInt::get(Int64Ty, 128));
     Value *TaskBuf = Builder.CreateAlloca(CharPtrTy, ConstantInt::get(Int64Ty, 64));
     
-    Value *MapsFmt = Builder.CreateGlobalStringPtr("/proc/%d/maps", "maps_fmt");
-    Value *TaskFmt = Builder.CreateGlobalStringPtr("/proc/%d/task", "task_fmt");
+    Value *MapsFmt = Builder.CreateGlobalString("/proc/%d/maps", "maps_fmt");
+    Value *TaskFmt = Builder.CreateGlobalString("/proc/%d/task", "task_fmt");
     
     FunctionCallee SnprintfFunc = M.getOrInsertFunction(
         "snprintf",

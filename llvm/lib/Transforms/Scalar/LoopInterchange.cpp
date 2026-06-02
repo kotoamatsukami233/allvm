@@ -861,6 +861,7 @@ findInnerReductionPhi(Loop *L, Value *V,
         case RecurKind::Add:
         case RecurKind::Mul: {
           unsigned OpCode = RecurrenceDescriptor::getOpcode(RK);
+          (void)OpCode;
           SmallVector<Instruction *, 4> Ops = RD.getReductionOpChain(PHI, L);
 
           // Bail out when we fail to collect reduction instructions chain.

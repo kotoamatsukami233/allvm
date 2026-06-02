@@ -8,6 +8,7 @@
 #include <QTabWidget>
 #include <QKeyEvent>
 #include "MainTab.h"
+#include "CodeEditor.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -35,12 +36,11 @@ private:
     void appendLog(const QString &text, const QString &color = "#e0e0e0");
     void saveConfig();
     void loadConfig();
-    static QString mdToHtml(const QString &md);
     
     QTabWidget *m_tabWidget;
     MainTab *m_mainTab;
     
-    QTextEdit *m_mkInfoText;
+    CodeEditor *m_mkInfoText;
     QTextEdit *m_outputLog;
     QProgressBar *m_progressBar;
     

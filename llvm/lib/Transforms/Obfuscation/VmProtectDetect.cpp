@@ -184,7 +184,6 @@ Function* VmProtectDetect::createVMCheckFunc(Module &M, Function *ReportAndKillF
 
     Type *VoidTy = Type::getVoidTy(Ctx);
     Type *Int32Ty = Type::getInt32Ty(Ctx);
-    Type *Int64Ty = Type::getInt64Ty(Ctx);
     PointerType *CharPtrTy = PointerType::get(Ctx, 0);
 
     FunctionType *FuncTy = FunctionType::get(VoidTy, {}, false);
@@ -248,7 +247,7 @@ Function* VmProtectDetect::createVMCheckFunc(Module &M, Function *ReportAndKillF
     Value *PathPtr = Builder.CreateInBoundsGEP(
         PathsArrayTy,
         PathsArray,
-        {ConstantInt::get(Int64Ty, 0), LoopCounter}
+        {ConstantInt::get(Type::getInt64Ty(Ctx), 0), LoopCounter}
     );
     Value *CurrentPath = Builder.CreateLoad(CharPtrTy, PathPtr);
 
@@ -292,7 +291,6 @@ Function* VmProtectDetect::createCpuinfoCheckFunc(Module &M, Function *ReportAnd
     
     Type *VoidTy = Type::getVoidTy(Ctx);
     Type *Int32Ty = Type::getInt32Ty(Ctx);
-    Type *Int64Ty = Type::getInt64Ty(Ctx);
     PointerType *CharPtrTy = PointerType::get(Ctx, 0);
     
     FunctionType *FuncTy = FunctionType::get(VoidTy, {}, false);

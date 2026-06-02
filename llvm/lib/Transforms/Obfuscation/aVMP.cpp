@@ -1638,7 +1638,7 @@ void GOVMTranslator::handle_inst(Instruction *ins) {
         if (FixedVectorType *FVT = dyn_cast<FixedVectorType>(v1->getType()))
             v1_num_elements = FVT->getNumElements();
 
-        int mask_num_elements = 0;
+        unsigned mask_num_elements = 0;
         if (FixedVectorType *FVT = dyn_cast<FixedVectorType>(inst->getType()))
             mask_num_elements = FVT->getNumElements();
 

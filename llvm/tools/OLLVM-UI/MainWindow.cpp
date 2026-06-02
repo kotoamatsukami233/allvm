@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "ConfigManager.h"
+#include "HelpDocument.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -15,9 +16,9 @@
 #include <QDialog>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_process(nullptr) {
-    setWindowTitle("OLLVM 混淆编译配置工具");
-    setMinimumSize(600, 500);
-    resize(640, 540);
+    setWindowTitle("ALLVM 混淆编译配置工具");
+    setMinimumSize(700, 550);
+    resize(720, 580);
     setupUI();
     loadConfig();
     m_mainTab->loadDefaultNdk();
@@ -46,10 +47,6 @@ void MainWindow::setupUI() {
     mainLayout->setSpacing(2);
     mainLayout->setContentsMargins(2, 2, 2, 2);
 
-    auto *titleLabel = new QLabel("<h2 style='color:#00d4aa;'>OLLVM 代码混淆编译器</h2>"
-                                  "<p style='color:#808090;'>Android NDK 项目 Android.mk 一键注入 &amp; 编译</p>", this);
-    mainLayout->addWidget(titleLabel);
-
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setStyleSheet(
         "QTabWidget::pane { border: 1px solid #3a3a5c; background: #1a1a2e; }"
@@ -66,16 +63,12 @@ void MainWindow::setupUI() {
 
     auto *tabMk = new QWidget();
     auto *mkLayout = new QVBoxLayout(tabMk);
-    mkLayout->setContentsMargins(2, 2, 2, 2);
-    auto *mkTextEdit = new QTextEdit(tabMk);
-    mkTextEdit->setTextInteractionFlags(Qt::TextEditorInteraction);
-    mkTextEdit->setStyleSheet("QTextEdit{font-family:Consolas,monospace;font-size:12px;background-color:#000000;color:#ffffff;}");
-    mkTextEdit->setTabStopDistance(24);
-    mkTextEdit->setPlaceholderText("Android.mk 内容将显示在这里...");
-    mkLayout->addWidget(mkTextEdit);
-    m_tabWidget->addTab(tabMk, "MK 信息");
-    m_mkInfoText = mkTextEdit;
-    connect(m_mainTab, &MainTab::mkContentChanged, mkTextEdit, &QTextEdit::setPlainText);
+    mkLayout->setContentsMargins(0, 0, 0, 0);
+    m_mkInfoText = new CodeEditor(tabMk);
+    m_mkInfoText->setPlaceholderText("; Android.mk 内容将显示在这里...\n; 支持语法高亮和行号显示");
+    mkLayout->addWidget(m_mkInfoText);
+    m_tabWidget->addTab(tabMk, "MK 编辑器");
+    connect(m_mainTab, &MainTab::mkContentChanged, m_mkInfoText, &CodeEditor::setPlainText);
 
     auto *tabOut = new QWidget();
     auto *outTabLayout = new QVBoxLayout(tabOut);
@@ -87,8 +80,17 @@ void MainWindow::setupUI() {
     m_outputLog = new QTextEdit(tabOut);
     m_outputLog->setReadOnly(true);
     m_outputLog->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    m_outputLog->setStyleSheet(
+        "QTextEdit {"
+        "  background-color: #0d1117;"
+        "  color: #c9d1d9;"
+        "  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;"
+        "  font-size: 12px;"
+        "  border: none;"
+        "  padding: 4px;"
+        "}");
     outTabLayout->addWidget(m_outputLog);
-    m_tabWidget->addTab(tabOut, "编译输出");
+    m_tabWidget->addTab(tabOut, "控制台");
 
     mainLayout->addWidget(m_tabWidget, 1);
 
@@ -197,7 +199,13 @@ void MainWindow::onInjectFlags() {
     auto passChecks = m_mainTab->passChecks();
     for (const auto &pc : passChecks) {
         if (pc.chk->isChecked()) {
-            flags << "-mllvm" << "-" + pc.flag;
+            if (pc.flag == "irobf-memmaps") {
+                flags << "-mllvm" << "-irobf-bandump";
+                flags << "-mllvm" << "-irobf-hidemaps";
+                flags << "-mllvm" << "-irobf-fakemaps";
+            } else {
+                flags << "-mllvm" << "-" + pc.flag;
+            }
         }
         if (pc.levelCombo && pc.chk->isChecked()) {
             int lvl = pc.levelCombo->currentIndex() + 1;
@@ -437,92 +445,15 @@ void MainWindow::onCollectOutput() {
 }
 
 void MainWindow::onCleanBuild() {
+    m_tabWidget->setCurrentIndex(2);
     m_outputLog->clear();
     appendLog("[控制台] 已清屏", "#a0a0b0");
 }
 
 void MainWindow::onShowHelp() {
-    QString md = R"MD(
-# OLLVM 混淆编译配置工具
-
-基于 LLVM 21.x 的 Android NDK 代码混淆一键配置工具，通过修改 `Android.mk` 自动注入编译标志实现混淆保护。
-
-## 快速上手
-
-### 第一步：选择项目目录
-
-点击 **jni 文件夹** 右侧的 `选择` 按钮，选择你的 NDK 项目目录。
-
-### 第二步：选择混淆功能
-
-在 **混淆功能** 区域勾选需要的保护。
-
-### 第三步：注入 Android.mk
-
-点击 **一键注入** 按钮，自动注入混淆标志。
-
-### 第四步：一键编译
-
-确认 **NDK 路径** 正确后，点击 **一键编译 (ndk-build)**。
-
-### 第五步：收集产物
-
-点击 **收集产物到输出** 将编译产物复制到输出目录。
-)MD";
-
-    auto *dialog = new QDialog(this);
-    dialog->setWindowTitle("帮助文档 - OLLVM 混淆编译配置工具");
-    dialog->resize(800, 600);
-
-    auto *layout = new QVBoxLayout(dialog);
-    auto *textEdit = new QTextEdit(dialog);
-    textEdit->setReadOnly(true);
-    textEdit->setStyleSheet(
-        "QTextEdit { background: #1a1a2e; color: #c0c0d0; border: none; }");
-    textEdit->setHtml(mdToHtml(md));
-    layout->addWidget(textEdit);
-
-    auto *btnClose = new QPushButton("关闭", dialog);
-    btnClose->setStyleSheet(
-        "QPushButton { background: #3a3a5c; color: #e0e0e0; padding: 8px 30px; border-radius: 4px; }"
-        "QPushButton:hover { background: #4a4a6c; }");
-    connect(btnClose, &QPushButton::clicked, dialog, &QDialog::accept);
-    layout->addWidget(btnClose, 0, Qt::AlignCenter);
-
+    HelpDocument *dialog = new HelpDocument(this);
     dialog->exec();
     dialog->deleteLater();
-}
-
-QString MainWindow::mdToHtml(const QString &md) {
-    QStringList lines = md.split('\n');
-    QString html;
-    html += "<style>"
-            "body { font-family: 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.8; }"
-            "h1 { color: #00d4aa; font-size: 22px; border-bottom: 2px solid #3a3a5c; padding-bottom: 6px; }"
-            "h2 { color: #3498db; font-size: 18px; border-bottom: 1px solid #3a3a5c; padding-bottom: 4px; }"
-            "h3 { color: #e67e22; font-size: 15px; }"
-            "code { background: #252540; color: #00ff88; padding: 2px 6px; border-radius: 3px; font-family: Consolas, monospace; }"
-            "pre { background: #12122a; border: 1px solid #3a3a5c; border-radius: 6px; padding: 12px; overflow-x: auto; }"
-            "p { color: #c0c0d0; }"
-            "</style>";
-
-    for (const auto &line : lines) {
-        QString processed = line.toHtmlEscaped();
-        
-        if (processed.startsWith("### ")) {
-            html += "<h3>" + processed.mid(4) + "</h3>\n";
-        } else if (processed.startsWith("## ")) {
-            html += "<h2>" + processed.mid(3) + "</h2>\n";
-        } else if (processed.startsWith("# ")) {
-            html += "<h1>" + processed.mid(2) + "</h1>\n";
-        } else if (processed.startsWith("- ")) {
-            html += "<li>" + processed.mid(2) + "</li>\n";
-        } else if (!processed.isEmpty()) {
-            html += "<p>" + processed + "</p>\n";
-        }
-    }
-
-    return html;
 }
 
 void MainWindow::saveConfig() {

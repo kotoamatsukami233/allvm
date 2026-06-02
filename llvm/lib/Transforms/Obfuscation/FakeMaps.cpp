@@ -84,7 +84,7 @@ Function* FakeMaps::createGenerateFakeMapsFunc(Module &M) {
     CallInst *Pid = Builder.CreateCall(GetpidFunc);
     
     Value *PathBuf = Builder.CreateAlloca(CharPtrTy, ConstantInt::get(Int64Ty, 128));
-    Value *MapsFmt = Builder.CreateGlobalStringPtr("/proc/%d/maps", "maps_fmt");
+    Value *MapsFmt = Builder.CreateGlobalString("/proc/%d/maps", "maps_fmt");
     
     FunctionCallee SnprintfFunc = M.getOrInsertFunction(
         "snprintf",
@@ -98,7 +98,7 @@ Function* FakeMaps::createGenerateFakeMapsFunc(Module &M) {
         FunctionType::get(CharPtrTy, {CharPtrTy, CharPtrTy}, false)
     );
     
-    Value *Mode = Builder.CreateGlobalStringPtr("w", "mode");
+    Value *Mode = Builder.CreateGlobalString("w", "mode");
     Builder.CreateBr(OpenBB);
     
     Builder.SetInsertPoint(OpenBB);
@@ -115,7 +115,7 @@ Function* FakeMaps::createGenerateFakeMapsFunc(Module &M) {
         FunctionType::get(Int32Ty, {CharPtrTy, CharPtrTy}, true)
     );
     
-    Value *Fmt = Builder.CreateGlobalStringPtr("%08lx-%08lx %c%c%c%c %08lx %02x:%02x %lu %s\n", "fmt");
+    Value *Fmt = Builder.CreateGlobalString("%08lx-%08lx %c%c%c%c %08lx %02x:%02x %lu %s\n", "fmt");
     
     auto writeEntry = [&](uint64_t start, uint64_t end, char r, char w, char x, char p, const char *name) {
         Value *Start = ConstantInt::get(Int64Ty, start);
@@ -128,7 +128,7 @@ Function* FakeMaps::createGenerateFakeMapsFunc(Module &M) {
         Value *DevMaj = ConstantInt::get(Int32Ty, 0);
         Value *DevMin = ConstantInt::get(Int32Ty, 0);
         Value *Inode = ConstantInt::get(Int64Ty, 0);
-        Value *Name = Builder.CreateGlobalStringPtr(name, "name");
+        Value *Name = Builder.CreateGlobalString(name, "name");
         
         Builder.CreateCall(FprintfFunc, {Fp, Fmt, Start, End, R, W, X, P, Offset, DevMaj, DevMin, Inode, Name});
     };

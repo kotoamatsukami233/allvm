@@ -4,8 +4,8 @@
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
-    app.setApplicationName("OLLVM 混淆编译配置工具");
-    app.setApplicationVersion("1.0.0");
+    app.setApplicationName("ALLVM 混淆编译配置工具");
+    app.setApplicationVersion("1.2.0");
     app.setWindowIcon(QIcon(":/UI.png"));
     
     app.setStyleSheet(

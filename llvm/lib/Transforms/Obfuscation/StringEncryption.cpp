@@ -491,8 +491,8 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
 	IRBuilder<> IRB(Ctx);
 
 	Type *PlainEltTy = Entry->IsUTF16 ? Type::getInt16Ty(Ctx) : Type::getInt8Ty(Ctx);
-	PointerType *PlainPtrTy = PointerType::getUnqual(PlainEltTy);
-	PointerType *DataPtrTy = PointerType::getUnqual(Type::getInt8Ty(Ctx));
+	PointerType *PlainPtrTy = PointerType::get(Ctx, 0);
+	PointerType *DataPtrTy = PointerType::get(Ctx, 0);
 
 	FunctionType *FuncTy = FunctionType::get(
 	                           Type::getVoidTy(Ctx),
@@ -547,7 +547,7 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
 		Value *KeyCharPtr = IRB.CreateInBoundsGEP(IRB.getInt8Ty(), Data, KeyIdx);
 		KeyChar = IRB.CreateLoad(IRB.getInt8Ty(), KeyCharPtr);
 	} else {
-		Value *KeyBase = IRB.CreateBitCast(Data, PointerType::getUnqual(Type::getInt16Ty(Ctx)));
+		Value *KeyBase = IRB.CreateBitCast(Data, PointerType::get(Ctx, 0));
 		Value *KeyCharPtr = IRB.CreateInBoundsGEP(Type::getInt16Ty(Ctx), KeyBase, KeyIdx);
 		KeyChar = IRB.CreateLoad(Type::getInt16Ty(Ctx), KeyCharPtr);
 	}
@@ -560,7 +560,7 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
 		Value *Two = IRB.getInt32(2);
 		Value *IdxBytes = IRB.CreateMul(LoopCounter, Two);
 		Value *EncCharBytePtr = IRB.CreateInBoundsGEP(IRB.getInt8Ty(), EncPtr, IdxBytes);
-		Value *EncChar16Ptr = IRB.CreateBitCast(EncCharBytePtr, PointerType::getUnqual(Type::getInt16Ty(Ctx)));
+		Value *EncChar16Ptr = IRB.CreateBitCast(EncCharBytePtr, PointerType::get(Ctx, 0));
 		EncChar = IRB.CreateLoad(Type::getInt16Ty(Ctx), EncChar16Ptr, true);
 	}
 
@@ -781,7 +781,7 @@ bool StringEncryption::processConstantStringUse(Function *F) {
 							IRBuilder<> IRB(InsertPoint);
 
 							Value *OutBuf = IRB.CreateBitCast(Entry->DecGV,
-							                                  PointerType::getUnqual(Ctx));
+							                                  PointerType::get(Ctx, 0));
 							Value *Data = IRB.CreateInBoundsGEP(
 							                  EncryptedStringTable->getValueType(),
 							                  EncryptedStringTable,
@@ -826,7 +826,7 @@ bool StringEncryption::processConstantStringUse(Function *F) {
 								IRBuilder<> IRB(InsertPoint);
 
 								Value *OutBuf = IRB.CreateBitCast(Entry->DecGV,
-								                                  PointerType::getUnqual(Ctx));
+								                                  PointerType::get(Ctx, 0));
 								Value *Data = IRB.CreateInBoundsGEP(
 								                  EncryptedStringTable->getValueType(),
 								                  EncryptedStringTable,
@@ -868,14 +868,14 @@ bool StringEncryption::processConstantStringUse(Function *F) {
 								IRBuilder<> IRB(Inst.isEHPad() ? &*Inst.getParent()->getPrevNode()->getFirstInsertionPt() : &Inst);
 
 								Value *OutBuf = IRB.CreateBitCast(Entry->DecGV,
-								                                  PointerType::getUnqual(Ctx));
-								Value *Data = IRB.CreateInBoundsGEP(
-								                  EncryptedStringTable->getValueType(),
-								                  EncryptedStringTable,
-								{IRB.getInt32(0), IRB.getInt32(Entry->Offset)});
-								fixEH(IRB.CreateCall(Entry->DecFunc, {OutBuf, Data}));
+							                                  PointerType::get(Ctx, 0));
+							Value *Data = IRB.CreateInBoundsGEP(
+							                  EncryptedStringTable->getValueType(),
+							                  EncryptedStringTable,
+							{IRB.getInt32(0), IRB.getInt32(Entry->Offset)});
+							fixEH(IRB.CreateCall(Entry->DecFunc, {OutBuf, Data}));
 
-								Inst.replaceUsesOfWith(GV, Entry->DecGV);
+							Inst.replaceUsesOfWith(GV, Entry->DecGV);
 								MaybeDeadGlobalVars.insert(GV);
 								DecryptedGV.insert(GV);
 							}
@@ -905,7 +905,7 @@ bool StringEncryption::processConstantStringUse(Function *F) {
 									IRBuilder<> IRB(Inst.isEHPad() ? &*Inst.getParent()->getPrevNode()->getFirstInsertionPt() : &Inst);
 
 									Value *OutBuf = IRB.CreateBitCast(Entry->DecGV,
-									                                  PointerType::getUnqual(Ctx));
+									                                  PointerType::get(Ctx, 0));
 									Value *Data = IRB.CreateInBoundsGEP(
 									                  EncryptedStringTable->getValueType(),
 									                  EncryptedStringTable,
